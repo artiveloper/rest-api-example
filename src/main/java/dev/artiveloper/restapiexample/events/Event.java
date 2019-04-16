@@ -2,6 +2,7 @@ package dev.artiveloper.restapiexample.events;
 
 import lombok.*;
 
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
 
@@ -11,8 +12,10 @@ import java.time.LocalDateTime;
 @Setter
 @EqualsAndHashCode(of = "id")
 @Builder
+@Entity
 public class Event {
 
+    @Id @GeneratedValue
     private Integer id;
     private String name;
     private String description;
@@ -25,6 +28,7 @@ public class Event {
     private int maxPrice; // (optional)
     private int limitOfEnrollment;
     private boolean offline;
+    @Enumerated(EnumType.STRING)
     private EventStatus eventStatus;
 
 }
