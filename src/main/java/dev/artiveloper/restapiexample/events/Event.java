@@ -30,6 +30,6 @@ public class Event {
     private boolean offline;
     private boolean free;
     @Enumerated(EnumType.STRING)
-    private EventStatus eventStatus = EventStatus.DTAFT;
+    private EventStatus eventStatus;
 
 }

@@ -17,6 +17,7 @@ public class EventDto {
     private int basePrice; // (optional)
     private int maxPrice; // (optional)
     private int limitOfEnrollment;
+    private EventStatus eventStatus;
 
     public Event toEventEntity() {
         return Event.builder()
@@ -30,6 +31,7 @@ public class EventDto {
                 .basePrice(this.basePrice)
                 .maxPrice(this.maxPrice)
                 .limitOfEnrollment(this.limitOfEnrollment)
+                .eventStatus(EventStatus.DTAFT)
                 .build();
     }
 
