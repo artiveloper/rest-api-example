@@ -1,5 +1,6 @@
 package dev.artiveloper.restapiexample.events;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.Test;
@@ -59,4 +60,31 @@ public class EventControllerTest {
                 .andExpect(jsonPath("free").value(Matchers.not(true)))
                 .andExpect(jsonPath("eventStatus").value(EventStatus.DTAFT.name()));
     }
+
+    @Test
+    public void createEvent_BadRequest() throws Exception {
+        Event event = Event.builder()
+                .id(100)
+                .name("spring")
+                .description("REST API Developerment with Spring")
+                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 11, 0, 0))
+                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 15, 0, 0))
+                .beginEventDateTime(LocalDateTime.of(2018, 11, 25, 0, 0))
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100)
+                .location("강남역 D2 스타텁 팩토리")
+                .free(true)
+                .eventStatus(EventStatus.PUBLISHED)
+                .build();
+
+        mockMvc.perform(
+                post("/api/events")
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaTypes.HAL_JSON)
+                        .content(objectMapper.writeValueAsString(event)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
 }
