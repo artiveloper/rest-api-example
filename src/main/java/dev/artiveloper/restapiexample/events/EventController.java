@@ -32,8 +32,9 @@ public class EventController {
         if (errors.hasErrors()) {
             return ResponseEntity.badRequest().body(errors);
         }
-
-        Event newEvent = eventRepositoy.save(event.toEventEntity());
+        Event newEvent = event.toEventEntity();
+        newEvent.update();
+        eventRepositoy.save(newEvent);
         URI createdUri = linkTo(EventController.class).slash(newEvent.getId()).toUri();
         return ResponseEntity.created(createdUri).body(newEvent);
     }
