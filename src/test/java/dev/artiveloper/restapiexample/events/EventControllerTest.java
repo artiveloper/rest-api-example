@@ -1,10 +1,10 @@
 package dev.artiveloper.restapiexample.events;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,8 +18,7 @@ import java.time.LocalDateTime;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,6 +37,9 @@ public class EventControllerTest {
 
     @Autowired
     EventRepositoy eventRepositoy;
+
+    @Autowired
+    ModelMapper modelMapper;
 
     @Test
     public void createEvent() throws Exception {
@@ -106,29 +108,27 @@ public class EventControllerTest {
         String api = "/api/events";
 
         EventDto eventDto = EventDto.builder()
-                .name("spring")
-                .description("REST API Developerment with Spring")
-                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 25, 0, 0))
-                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 24, 0, 0))
-                .beginEventDateTime(LocalDateTime.of(2018, 11, 23, 0, 0))
-                .endEventDateTime(LocalDateTime.of(2018, 11, 22, 0, 0))
+                .name("Spring")
+                .description("REST API Development with Spring")
+                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
+                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
+                .beginEventDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
+                .endEventDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
                 .basePrice(10000)
                 .maxPrice(200)
                 .limitOfEnrollment(100)
                 .location("강남역 D2 스타텁 팩토리")
-                .eventStatus(EventStatus.PUBLISHED)
                 .build();
 
-        mockMvc.perform(post(api)
+        this.mockMvc.perform(post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(this.objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$[0].objectName").exists())
-                .andExpect(jsonPath("$[0].defaultMessage").exists())
-                .andExpect(jsonPath("$[0].code").exists())
+                .andExpect(jsonPath("content[0].objectName").exists())
+                .andExpect(jsonPath("content[0].defaultMessage").exists())
+                .andExpect(jsonPath("content[0].code").exists())
                 .andExpect(jsonPath("_links.index").exists());
-        /*.andExpect(jsonPath("$[0].rejectedValue").exists());*/
     }
 
     //이벤트 30개를 10개씩 두번째 페이지 조회하기
@@ -152,8 +152,19 @@ public class EventControllerTest {
 
     private Event generateEvent(int index) {
         Event event = Event.builder()
-                .name("event  " + index)
+                .name("event " + index)
                 .description("test event")
+                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
+                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
+                .beginEventDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
+                .endEventDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100)
+                .location("강남역 D2 스타텁 팩토리")
+                .free(false)
+                .offline(true)
+                .eventStatus(EventStatus.DTAFT)
                 .build();
 
         return this.eventRepositoy.save(event);
@@ -169,7 +180,7 @@ public class EventControllerTest {
                 .andExpect(jsonPath("name").exists())
                 .andExpect(jsonPath("id").exists())
                 .andExpect(jsonPath("_links.self").exists());
-                //.andExpect(jsonPath("_links.profile").exists());
+        //.andExpect(jsonPath("_links.profile").exists());
     }
 
     @Test
@@ -180,6 +191,80 @@ public class EventControllerTest {
     }
 
     @Test
+    public void updateEvent() throws Exception {
+        String api = "/api/events/{id}";
+        Event createdEvent = generateEvent(100);
+
+        EventDto updatedEvent = this.modelMapper.map(createdEvent, EventDto.class);
+        String updatedName = "업데이트된 이벤트";
+        String updatedDescription = "REST API Development with Spring";
+
+        updatedEvent.setName(updatedName);
+        updatedEvent.setDescription(updatedDescription);
+
+        this.mockMvc.perform(
+                put(api, createdEvent.getId())
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaTypes.HAL_JSON)
+                        .content(objectMapper.writeValueAsString(updatedEvent)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("name").value(updatedName))
+                .andExpect(jsonPath("description").value(updatedDescription))
+                .andExpect(jsonPath("_links.self").exists());
+    }
+
+    @Test
+    public void updateEvent_badRequest_emptyInputValue() throws Exception {
+        String api = "/api/events/{id}";
+        Event createdEvent = generateEvent(100);
+
+        EventDto updatedEvent = new EventDto();
+
+        this.mockMvc.perform(
+                put(api, createdEvent.getId())
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaTypes.HAL_JSON)
+                        .content(objectMapper.writeValueAsString(updatedEvent)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void updateEvent_badRequest_wrongInputValue() throws Exception {
+        String api = "/api/events/{id}";
+        Event createdEvent = generateEvent(100);
+
+        EventDto updatedEvent = modelMapper.map(createdEvent, EventDto.class);
+        updatedEvent.setBasePrice(2000);
+        updatedEvent.setMaxPrice(1000);
+
+        this.mockMvc.perform(
+                put(api, createdEvent.getId())
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaTypes.HAL_JSON)
+                        .content(objectMapper.writeValueAsString(updatedEvent)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void updateEvent_notFound() throws Exception {
+        String api = "/api/events/12341234";
+        Event createdEvent = generateEvent(100);
+
+        EventDto updatedEvent = modelMapper.map(createdEvent, EventDto.class);
+
+        this.mockMvc.perform(
+                put(api)
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaTypes.HAL_JSON)
+                        .content(objectMapper.writeValueAsString(updatedEvent)))
+                .andDo(print())
+                .andExpect(status().isNotFound());
+    }
+
+
     public void testFree() {
         Event event = Event.builder()
                 .basePrice(0)
@@ -200,7 +285,6 @@ public class EventControllerTest {
         assertThat(event.isFree()).isFalse();
     }
 
-    @Test
     public void testOffline() {
         Event event = Event.builder()
                 .location("강남역")

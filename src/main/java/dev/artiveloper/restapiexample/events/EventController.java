@@ -1,6 +1,8 @@
 package dev.artiveloper.restapiexample.events;
 
+import dev.artiveloper.restapiexample.common.ErrorResource;
 import lombok.AllArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -25,16 +27,16 @@ public class EventController {
 
     private final EventRepositoy eventRepositoy;
     private final EventValidator eventValidator;
+    private final ModelMapper modelMapper;
 
     @PostMapping
     public ResponseEntity createEvent(@RequestBody @Valid EventDto event, Errors errors) {
         if (errors.hasErrors()) {
-            return ResponseEntity.badRequest().body(errors);
+            return badRequest(errors);
         }
-
         eventValidator.valid(event, errors);
         if (errors.hasErrors()) {
-            return ResponseEntity.badRequest().body(errors);
+            return badRequest(errors);
         }
         Event newEvent = event.toEventEntity();
         newEvent.update();
@@ -66,6 +68,10 @@ public class EventController {
         Event event = optionalEvent.get();
         EventResource eventResource = new EventResource(event);
         return ResponseEntity.ok(eventResource);
+    }
+
+    private ResponseEntity badRequest(Errors errors) {
+        return ResponseEntity.badRequest().body(new ErrorResource(errors));
     }
 
 }
