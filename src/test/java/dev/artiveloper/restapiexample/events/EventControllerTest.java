@@ -15,9 +15,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,6 +35,9 @@ public class EventControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    EventRepositoy eventRepositoy;
 
     @Test
     public void createEvent() throws Exception {
@@ -124,6 +129,54 @@ public class EventControllerTest {
                 .andExpect(jsonPath("$[0].code").exists())
                 .andExpect(jsonPath("_links.index").exists());
         /*.andExpect(jsonPath("$[0].rejectedValue").exists());*/
+    }
+
+    //이벤트 30개를 10개씩 두번째 페이지 조회하기
+    @Test
+    public void queryEvents() throws Exception {
+        //given
+        IntStream.range(0, 30).forEach(this::generateEvent);
+
+        String api = "/api/events";
+        //when
+        this.mockMvc.perform(get(api)
+                .param("page", "1")
+                .param("size", "10")
+                .param("sort", "name,DESC")
+        )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("page").exists())
+                .andExpect(jsonPath("_embedded.eventList[0]_links.self").exists());
+    }
+
+    private Event generateEvent(int index) {
+        Event event = Event.builder()
+                .name("event  " + index)
+                .description("test event")
+                .build();
+
+        return this.eventRepositoy.save(event);
+    }
+
+    @Test
+    public void getEvent() throws Exception {
+        Event event = this.generateEvent(100);
+
+        String api = "/api/events/{id}";
+        this.mockMvc.perform(get(api, event.getId()))
+                .andDo(print())
+                .andExpect(jsonPath("name").exists())
+                .andExpect(jsonPath("id").exists())
+                .andExpect(jsonPath("_links.self").exists());
+                //.andExpect(jsonPath("_links.profile").exists());
+    }
+
+    @Test
+    public void getEvent_404() throws Exception {
+        String api = "/api/events/12341234";
+        this.mockMvc.perform(get(api))
+                .andExpect(status().isNotFound());
     }
 
     @Test
