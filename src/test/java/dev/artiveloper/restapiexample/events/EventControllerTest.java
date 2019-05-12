@@ -1,45 +1,24 @@
 package dev.artiveloper.restapiexample.events;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.artiveloper.restapiexample.common.BaseControllerTest;
 import org.hamcrest.Matchers;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.stream.IntStream;
 
-import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class EventControllerTest {
-
-    @Autowired
-    MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+public class EventControllerTest extends BaseControllerTest {
 
     @Autowired
     EventRepositoy eventRepositoy;
-
-    @Autowired
-    ModelMapper modelMapper;
 
     @Test
     public void createEvent() throws Exception {
@@ -262,44 +241,6 @@ public class EventControllerTest {
                         .content(objectMapper.writeValueAsString(updatedEvent)))
                 .andDo(print())
                 .andExpect(status().isNotFound());
-    }
-
-
-    public void testFree() {
-        Event event = Event.builder()
-                .basePrice(0)
-                .maxPrice(0)
-                .build();
-
-        event.update();
-
-        assertThat(event.isFree()).isTrue();
-
-        event = Event.builder()
-                .basePrice(0)
-                .maxPrice(100)
-                .build();
-
-        event.update();
-
-        assertThat(event.isFree()).isFalse();
-    }
-
-    public void testOffline() {
-        Event event = Event.builder()
-                .location("강남역")
-                .build();
-
-        event.update();
-
-        assertThat(event.isOffline()).isTrue();
-
-        event = Event.builder()
-                .build();
-
-        event.update();
-
-        assertThat(event.isOffline()).isFalse();
     }
 
 }
