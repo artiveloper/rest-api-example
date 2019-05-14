@@ -11,7 +11,7 @@ import java.util.Set;
 @EqualsAndHashCode(of = "id")
 public class Account {
 
-    @Id
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     private String email;
