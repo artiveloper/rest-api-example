@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -18,7 +19,15 @@ import static java.util.stream.Collectors.toSet;
 public class AccountService implements UserDetailsService {
 
     @Autowired
-    private AccountRepository accountRepository;
+    AccountRepository accountRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    public Account save(Account account) {
+        account.setPassword(passwordEncoder.encode(account.getPassword()));
+        return this.accountRepository.save(account);
+    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
