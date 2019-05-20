@@ -31,20 +31,4 @@ public class AppConfig {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-    @Bean
-    public ApplicationRunner applicationRunner() {
-        return new ApplicationRunner() {
-            @Override
-            public void run(ApplicationArguments args) throws Exception {
-                Account account = Account.builder()
-                .email("artiveloper@gmail.com")
-                .password("password")
-                .roles(new HashSet<>(Arrays.asList(AccountRole.ADMIN, AccountRole.USER)))
-                .build();
-
-                accountService.save(account);
-            }
-        };
-    }
-
 }
