@@ -1,15 +1,26 @@
 package dev.artiveloper.restapiexample.events;
 
+import dev.artiveloper.restapiexample.accounts.Account;
+import dev.artiveloper.restapiexample.accounts.AccountRepository;
+import dev.artiveloper.restapiexample.accounts.AccountRole;
+import dev.artiveloper.restapiexample.accounts.AccountService;
 import dev.artiveloper.restapiexample.common.BaseControllerTest;
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.common.util.Jackson2JsonParser;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.stream.IntStream;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -19,6 +30,18 @@ public class EventControllerTest extends BaseControllerTest {
 
     @Autowired
     EventRepositoy eventRepositoy;
+
+    @Autowired
+    AccountRepository accountRepository;
+
+    @Autowired
+    AccountService accountService;
+
+    @Before
+    public void setUp() throws Exception {
+        this.eventRepositoy.deleteAll();
+        this.accountRepository.deleteAll();
+    }
 
     @Test
     public void createEvent() throws Exception {
@@ -39,6 +62,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         mockMvc.perform(
                 post(api)
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
                         .accept(MediaTypes.HAL_JSON)
                         .content(objectMapper.writeValueAsString(event)))
@@ -52,6 +76,35 @@ public class EventControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("_links.self").exists())
                 .andExpect(jsonPath("_links.query-events").exists())
                 .andExpect(jsonPath("_links.update-event").exists());
+    }
+
+    private String getBearerToken() throws Exception {
+        return "Bearer " + getAccessToken();
+    }
+
+    private String getAccessToken() throws Exception {
+        String api = "/oauth/token";
+        String clientId = "myApp";
+        String clientSecret = "pass";
+        String username = "artiveloper@gmail.com";
+        String password = "password";
+
+        Account account = Account.builder()
+                .email(username)
+                .password(password)
+                .roles(new HashSet<>(Arrays.asList(AccountRole.ADMIN, AccountRole.USER)))
+                .build();
+
+        this.accountService.save(account);
+
+        ResultActions perform = this.mockMvc.perform(post(api)
+                .with(httpBasic(clientId, clientSecret))
+                .param("username", username)
+                .param("password", password)
+                .param("grant_type", "password"));
+
+        String response = perform.andReturn().getResponse().getContentAsString();
+        return new Jackson2JsonParser().parseMap(response).get("access_token").toString();
     }
 
     @Test
@@ -75,6 +128,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         mockMvc.perform(
                 post(api)
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
                         .accept(MediaTypes.HAL_JSON)
                         .content(objectMapper.writeValueAsString(event)))
@@ -100,6 +154,7 @@ public class EventControllerTest extends BaseControllerTest {
                 .build();
 
         this.mockMvc.perform(post("/api/events")
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .content(this.objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
@@ -183,6 +238,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         this.mockMvc.perform(
                 put(api, createdEvent.getId())
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
                         .accept(MediaTypes.HAL_JSON)
                         .content(objectMapper.writeValueAsString(updatedEvent)))
@@ -202,6 +258,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         this.mockMvc.perform(
                 put(api, createdEvent.getId())
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
                         .accept(MediaTypes.HAL_JSON)
                         .content(objectMapper.writeValueAsString(updatedEvent)))
@@ -220,6 +277,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         this.mockMvc.perform(
                 put(api, createdEvent.getId())
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
                         .accept(MediaTypes.HAL_JSON)
                         .content(objectMapper.writeValueAsString(updatedEvent)))
@@ -236,6 +294,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         this.mockMvc.perform(
                 put(api)
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
                         .accept(MediaTypes.HAL_JSON)
                         .content(objectMapper.writeValueAsString(updatedEvent)))
